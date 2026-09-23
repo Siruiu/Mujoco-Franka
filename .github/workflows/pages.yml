@@ -36,7 +36,7 @@ jobs:
       - name: Assemble static site
         shell: bash
         run: |
-          mkdir -p _site
+          mkdir -p _site/node_modules
           cp index.html favicon.ico site_config.js _site/
           for dir in app assets backend bridge core environment model plugins renderer spec ui worker local_model dist node_modules/three; do
             cp -R "$dir" "_site/$dir"
