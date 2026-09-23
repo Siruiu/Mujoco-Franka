@@ -267,7 +267,7 @@
   globalThis.__PLAY_RUNTIME_CONFIG__ = {
     startup: {
       entryVariant,
-      model: getRaw('model'),
+      model: getRaw('model') || String(globalThis.PLAY_MODEL || '').trim(),
       fallbackMode,
       debugMode,
       dumpToken,
