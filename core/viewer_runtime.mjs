@@ -395,8 +395,14 @@ export function buildWorkerUrl(baseUrl, source = resolveDefaultInputSource()) {
   const cacheBustMode = resolveCacheBustMode(source);
   const ver = resolveVer(source);
   const forgeBase = resolveForgeBase(source, { playVer: ver });
+  // MuJoCo is imported from a module worker. Keep a relative configured base
+  // anchored to the viewer page, not the worker module's /worker/ directory.
+  const forgeBaseUrl = new URL(
+    forgeBase,
+    typeof location !== 'undefined' ? location.href : `${url.origin}/`,
+  );
   url.searchParams.set('ver', ver);
-  url.searchParams.set('forgeBase', forgeBase);
+  url.searchParams.set('forgeBase', forgeBaseUrl.href);
   if (cacheBustMode === 'always') {
     url.searchParams.set(CACHE_BUST_KEY, 'always');
     url.searchParams.set('cb', String(Date.now()));
