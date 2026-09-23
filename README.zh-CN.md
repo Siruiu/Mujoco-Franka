@@ -4,7 +4,7 @@
 
 ![mujoco-wasm-play](assets/mujoco-wasm-play-cards.png)
 
-[推荐演示页](https://lshdlut.com/en/demos/play/) | [GitHub Pages 直达应用](https://lshdlut.github.io/mujoco-wasm-play/index.html?model=raj&ver=3.5.0&forgeBase=https://cdn.jsdelivr.net/gh/lshdlut/mujoco-wasm-forge@c7d49505b40cff7b113c4f1a5554676bdcfdbd84/dist/3.5.0/)
+[Franka Panda 在线演示](https://siruiu.github.io/Mujoco-Franka/) | [直接加载高精度 Franka XML](https://siruiu.github.io/Mujoco-Franka/?model=local_model/franka_emika_panda/scene.xml)
 
 > **文档（Sphinx / Read the Docs）**：源码位于 [`doc/zh/`](doc/zh/) 和 [`doc/en/`](doc/en/)；在线阅读：[中文](https://mujoco-wasm-play.readthedocs.io/zh-cn/latest/)｜[英文](https://mujoco-wasm-play.readthedocs.io/en/latest/)。
 
@@ -37,10 +37,10 @@
 - 本地开发（在 8000 端口服务仓库根目录）：
   - `python tools/dev_server.py --root . --port 8000`
   - `http://127.0.0.1:8000/index.html?model=local_model/franka_emika_panda/scene.xml`
-- 推荐演示页：
-  - `https://lshdlut.com/en/demos/play/`
-- 直达静态应用（GitHub Pages，仍保留）：
-  - `https://lshdlut.github.io/mujoco-wasm-play/index.html?model=raj&ver=3.5.0&forgeBase=https://cdn.jsdelivr.net/gh/lshdlut/mujoco-wasm-forge@c7d49505b40cff7b113c4f1a5554676bdcfdbd84/dist/3.5.0/`
+- 公共 GitHub Pages 演示（默认加载高精度 Franka Panda）：
+  - `https://siruiu.github.io/Mujoco-Franka/`
+- 显式加载高精度 Franka XML：
+  - `https://siruiu.github.io/Mujoco-Franka/?model=local_model/franka_emika_panda/scene.xml`
 - 插件：实验性。见 `doc/zh/reference/plugin_contract.md`。`smocap` 即将发布。
 
 ## 模型
