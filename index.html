@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <title>
+   MuJoCo WASM Play – Simulate Parity
+  </title>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <link href="favicon.ico" rel="icon"/>
+  <link href="./app/viewer_shell.css" rel="stylesheet"/>
+  <script type="importmap">
+   {
+    "imports": {
+      "three": "./node_modules/three/build/three.module.js",
+      "three/addons/": "./node_modules/three/examples/jsm/"
+    }
+   }
+  </script>
+  <script src="./site_config.js"></script>
+  <script data-play-entry-variant="single" src="./app/entry_bootstrap.js"></script>
+ </head>
+ <body>
+  <script data-play-shell-module="./app/main.mjs" src="./app/viewer_shell.js"></script>
+ </body>
+</html>

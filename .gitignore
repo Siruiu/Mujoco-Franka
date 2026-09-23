@@ -1,0 +1,79 @@
+# Node / tooling
+node_modules/
+/dist/
+/build/
+/local_temp/
+/coverage/
+/local_model/
+/tmp/
+*.log
+/tests/playwright-report/
+/tests/test-results/
+/playwright-report/
+/test-results/
+# Local-only Playwright specs
+/tests/**/*.local.spec.*
+
+# Python
+__pycache__/
+*.pyc
+
+# Local notes (ignored)
+local/
+/local_tools/docs/
+FORGE_NOTES.local.md
+FORGE_REFERENCE.md
+AGENTS.md
+DEV_PLAN_LOCAL.md
+tmp_*
+backups/
+worker_debug_direct.txt
+worker_debug_last.txt
+spec/*audit*.md
+
+# Local tools and artifacts
+/local_tools/
+/release_assets/
+/output/
+
+# Legacy/experimental (not part of canonical play)
+/scripts/
+/wrappers/
+FORGE_*.md
+/mjmodel_tmp.h
+/simulate_tmp.cc
+
+# Large local models: keep untracked under /local_model/ (gitignored)
+
+# Package manager lock
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# TypeScript and bundlers
+*.tsbuildinfo
+.cache/
+.vite/
+.parcel-cache/
+
+# Sphinx / Read the Docs
+doc/*/_build/
+
+# Generated UI/protocol artifacts are committed for GitHub Pages runtime.
+# Re-generate via:
+#   node tools/generate_ui_artifacts.mjs
+#   node tools/generate_worker_protocol.mjs
+
+# Root markdown files (keep README tracked)
+/*.md
+!DEV_ENHANCE.md
+!/PLUGIN_GUIDE.md
+!/plugin_dev.md
+!/README.md
+!/README.zh-CN.md
+!/PLAY_SIMULATE_AUDIT.md
+!/ARCHITECTURE.md
+!/AUDIT.md
