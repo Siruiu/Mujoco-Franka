@@ -41,6 +41,10 @@ jobs:
           for dir in app assets backend bridge core environment model plugins renderer spec ui worker local_model dist node_modules/three; do
             cp -R "$dir" "_site/$dir"
           done
+          python tools/build_pages_franka.py \
+            --source local_model/franka_emika_panda \
+            --output _site/local_model/franka_emika_panda \
+            --site-config _site/site_config.js
           touch _site/.nojekyll
 
       - name: Upload Pages artifact
