@@ -243,54 +243,96 @@ export async function createBackend(options = {}) {
     for (const candidate of modelCandidates) {
       const file = candidate.file;
       if (!file) continue;
-    try {
-      const url = new URL(file, ASSET_BASE_URL);
-      const res = await fetch(withCacheBust(url.href));
-      if (!res.ok) {
-        errors.push(`fetch ${file} status ${res.status}`);
-        logWarn(`[backend] fetch ${file} failed with status ${res.status}`);
-        continue;
-      }
-      const text = await res.text();
-      if (!text || text.trim().length === 0) {
-        errors.push(`empty content for ${file}`);
-        continue;
-      }
       try {
-        const parsed = parseMuJoCoDirectFileRefs(text);
-        const localRefs = (parsed.refs ?? []).filter((r) => r && r.path && !r.remote && !r.absolute);
-        const unsupported = (parsed.refs ?? []).filter((r) => r && r.path && (r.remote || r.absolute));
-        if (unsupported.length) {
-          const items = unsupported.map((r) => r.path).filter(Boolean).slice(0, 3);
-          const suffix = unsupported.length > 3 ? ` (+${unsupported.length - 3} more)` : '';
-          throw new Error(`Unsupported file reference(s): ${items.join(', ')}${suffix}`);
+        const bundleUrl = new URL(`${file}.bundle.json.gz`, ASSET_BASE_URL);
+        const bundleResponse = await fetch(withCacheBust(bundleUrl.href));
+        if (bundleResponse.ok) {
+          if (typeof DecompressionStream !== 'function') {
+            throw new Error('This browser does not support gzip stream decompression');
+          }
+          const decompressed = await new Response(
+            bundleResponse.body.pipeThrough(new DecompressionStream('gzip')),
+          ).arrayBuffer();
+          const payload = JSON.parse(new TextDecoder().decode(decompressed));
+          if (typeof payload.xmlText === 'string' && Array.isArray(payload.files)) {
+            const files = payload.files.map((entry) => {
+              const binary = atob(String(entry.data || ''));
+              const bytes = new Uint8Array(binary.length);
+              for (let index = 0; index < binary.length; index += 1) {
+                bytes[index] = binary.charCodeAt(index);
+              }
+              return { path: entry.path, data: bytes.buffer };
+            });
+            logStatus('[backend] loaded prepacked model bundle', {
+              file,
+              files: files.length,
+            });
+            return {
+              xmlText: payload.xmlText,
+              xmlPath: payload.xmlPath,
+              files,
+            };
+          }
+          throw new Error('Invalid prepacked model bundle payload');
         }
-        if (localRefs.length) {
-          const bundle = await buildMuJoCoBundle(
-            file,
-            text,
-            async (relPath) => {
-              const refUrl = new URL(relPath, ASSET_BASE_URL);
-              const r = await fetch(withCacheBust(refUrl.href));
-              if (!r.ok) throw new Error(`fetch ${relPath} status ${r.status}`);
-              return r.arrayBuffer();
-            },
-          );
-          return { xmlText: text, xmlPath: `/mem/${bundle.xmlRel}`, files: bundle.files };
+        if (bundleResponse.status !== 404) {
+          logWarn(`[backend] prepacked bundle ${file} returned status ${bundleResponse.status}; fetching XML assets individually`);
         }
       } catch (err) {
-        errors.push(`bundle ${file} error ${String(err)}`);
-        logWarn('[backend] failed to build xml bundle', { file, err });
-        strictCatch(err, 'backend:bundle_xml');
-        continue;
+        logWarn('[backend] prepacked bundle unavailable; fetching XML assets individually', {
+          file,
+          err,
+        });
+        strictCatch(err, 'backend:fetch_prepacked_bundle');
       }
-      return { xmlText: text };
-    } catch (err) {
-      errors.push(`fetch ${file} error ${String(err)}`);
-      logWarn('[backend] failed to fetch xml', { file, err });
-      strictCatch(err, 'backend:fetch_xml');
+      try {
+        const url = new URL(file, ASSET_BASE_URL);
+        const res = await fetch(withCacheBust(url.href));
+        if (!res.ok) {
+          errors.push(`fetch ${file} status ${res.status}`);
+          logWarn(`[backend] fetch ${file} failed with status ${res.status}`);
+          continue;
+        }
+        const text = await res.text();
+        if (!text || text.trim().length === 0) {
+          errors.push(`empty content for ${file}`);
+          continue;
+        }
+        try {
+          const parsed = parseMuJoCoDirectFileRefs(text);
+          const localRefs = (parsed.refs ?? []).filter((r) => r && r.path && !r.remote && !r.absolute);
+          const unsupported = (parsed.refs ?? []).filter((r) => r && r.path && (r.remote || r.absolute));
+          if (unsupported.length) {
+            const items = unsupported.map((r) => r.path).filter(Boolean).slice(0, 3);
+            const suffix = unsupported.length > 3 ? ` (+${unsupported.length - 3} more)` : '';
+            throw new Error(`Unsupported file reference(s): ${items.join(', ')}${suffix}`);
+          }
+          if (localRefs.length) {
+            const bundle = await buildMuJoCoBundle(
+              file,
+              text,
+              async (relPath) => {
+                const refUrl = new URL(relPath, ASSET_BASE_URL);
+                const r = await fetch(withCacheBust(refUrl.href));
+                if (!r.ok) throw new Error(`fetch ${relPath} status ${r.status}`);
+                return r.arrayBuffer();
+              },
+            );
+            return { xmlText: text, xmlPath: `/mem/${bundle.xmlRel}`, files: bundle.files };
+          }
+        } catch (err) {
+          errors.push(`bundle ${file} error ${String(err)}`);
+          logWarn('[backend] failed to build xml bundle', { file, err });
+          strictCatch(err, 'backend:bundle_xml');
+          continue;
+        }
+        return { xmlText: text };
+      } catch (err) {
+        errors.push(`fetch ${file} error ${String(err)}`);
+        logWarn('[backend] failed to fetch xml', { file, err });
+        strictCatch(err, 'backend:fetch_xml');
+      }
     }
-  }
     throw new Error(
       `No model loaded. Tried: ${modelCandidates.map((c) => c.file).join(', ')}. Errors: ${errors.join('; ')}`,
     );
