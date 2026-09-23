@@ -56,5 +56,15 @@ const payload = {
 
 await mkdir(path.dirname(outputPath), { recursive: true });
 const compressed = gzipSync(Buffer.from(JSON.stringify(payload)), { level: 9 });
-await writeFile(outputPath, compressed);
-console.log(`Built ${outputPath}: ${bundle.files.length} files, ${compressed.byteLength} compressed bytes`);
+const chunkSize = 1024 * 1024;
+const chunks = [];
+for (let offset = 0; offset < compressed.byteLength; offset += chunkSize) {
+  const index = chunks.length;
+  const name = `${path.basename(outputPath)}.part${String(index).padStart(3, '0')}`;
+  const bytes = compressed.subarray(offset, Math.min(offset + chunkSize, compressed.byteLength));
+  await writeFile(path.join(path.dirname(outputPath), name), bytes);
+  chunks.push({ file: name, size: bytes.byteLength });
+}
+const manifestPath = `${outputPath}.manifest.json`;
+await writeFile(manifestPath, JSON.stringify({ size: compressed.byteLength, chunks }));
+console.log(`Built ${manifestPath}: ${bundle.files.length} files, ${compressed.byteLength} bytes in ${chunks.length} chunks`);

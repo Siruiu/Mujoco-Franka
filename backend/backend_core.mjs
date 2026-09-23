@@ -245,13 +245,41 @@ export async function createBackend(options = {}) {
       if (!file) continue;
       try {
         const bundleUrl = new URL(`${file}.bundle.json.gz`, ASSET_BASE_URL);
-        const bundleResponse = await fetch(withCacheBust(bundleUrl.href));
-        if (bundleResponse.ok) {
+        const manifestUrl = new URL(`${file}.bundle.json.gz.manifest.json`, ASSET_BASE_URL);
+        const manifestResponse = await fetch(withCacheBust(manifestUrl.href));
+        let compressedBytes = null;
+        if (manifestResponse.ok) {
+          const manifest = await manifestResponse.json();
+          if (!Array.isArray(manifest.chunks) || !Number.isFinite(manifest.size)) {
+            throw new Error('Invalid prepacked model bundle manifest');
+          }
+          const chunks = await Promise.all(manifest.chunks.map(async (chunk) => {
+            const chunkUrl = new URL(String(chunk.file || ''), manifestUrl);
+            const response = await fetch(withCacheBust(chunkUrl.href));
+            if (!response.ok) throw new Error(`Model bundle chunk returned status ${response.status}`);
+            const bytes = await response.arrayBuffer();
+            if (bytes.byteLength !== chunk.size) throw new Error(`Incomplete model bundle chunk: ${chunk.file}`);
+            return bytes;
+          }));
+          compressedBytes = new Uint8Array(manifest.size);
+          let offset = 0;
+          for (const chunk of chunks) {
+            compressedBytes.set(new Uint8Array(chunk), offset);
+            offset += chunk.byteLength;
+          }
+          if (offset !== manifest.size) throw new Error('Incomplete prepacked model bundle');
+        } else if (manifestResponse.status === 404) {
+          const bundleResponse = await fetch(withCacheBust(bundleUrl.href));
+          if (bundleResponse.ok) compressedBytes = new Uint8Array(await bundleResponse.arrayBuffer());
+        } else {
+          throw new Error(`Model bundle manifest returned status ${manifestResponse.status}`);
+        }
+        if (compressedBytes) {
           if (typeof DecompressionStream !== 'function') {
             throw new Error('This browser does not support gzip stream decompression');
           }
           const decompressed = await new Response(
-            bundleResponse.body.pipeThrough(new DecompressionStream('gzip')),
+            new Blob([compressedBytes]).stream().pipeThrough(new DecompressionStream('gzip')),
           ).arrayBuffer();
           const payload = JSON.parse(new TextDecoder().decode(decompressed));
           if (typeof payload.xmlText === 'string' && Array.isArray(payload.files)) {
